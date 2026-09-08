@@ -1,0 +1,117 @@
+# M&A Bookstore SQL Code – XAMMP LocalHost server
+
+1-	Database was created
+2-	5 tables were inserted into M&A_bookstore database
+•	Books
+•	Orders
+•	Customers
+•	Authors
+•	Order_items
+3-	Various SQL queries were computed to aggregate the data, as follows:
+
+## Task 1 — Total revenue per book
+
+```sql
+SELECT 
+    books.title,
+    SUM(order_items.quantity * books.price) AS total_revenue
+FROM order_items
+JOIN books b ON order_items.book_id = books.book_id
+GROUP BY books.title
+ORDER BY total_revenue DESC;
+```
+
+---
+
+## Task 2 — Best-selling author (total copies sold, across all their books)
+
+```sql
+SELECT 
+    a.author_name,
+    SUM(oi.quantity) AS total_copies_sold
+FROM order_items oi
+JOIN books b ON oi.book_id = b.book_id
+JOIN authors a ON b.author_id = a.author_id
+GROUP BY a.author_name
+ORDER BY total_copies_sold DESC;
+```
+
+---
+
+## Task 3 — Customer lifetime value (ranked highest to lowest)
+
+```sql
+SELECT 
+    c.customer_name,
+    SUM(oi.quantity * b.price) AS lifetime_value
+FROM orders o
+JOIN order_items oi ON o.order_id = oi.order_id
+JOIN books b ON oi.book_id = b.book_id
+JOIN customers c ON o.customer_id = c.customer_id
+GROUP BY c.customer_name
+ORDER BY lifetime_value DESC;
+```
+
+---
+
+## Task 4 — Genres that have sold more than 20 total copies
+
+```sql
+SELECT 
+    b.genre,
+    SUM(oi.quantity) AS total_copies
+FROM order_items oi
+JOIN books b ON oi.book_id = b.book_id
+GROUP BY b.genre
+HAVING SUM(oi.quantity) > 20
+ORDER BY total_copies DESC;
+```
+
+---
+
+## Task 5 — Books that have never been ordered
+
+**Option A — NOT IN**
+```sql
+SELECT title
+FROM books
+WHERE book_id NOT IN (
+    SELECT DISTINCT book_id FROM order_items
+
+---
+
+## Task 6 — Monthly revenue trend
+
+```sql
+SELECT 
+    YEAR(o.order_date) AS order_year,
+    MONTH(o.order_date) AS order_month,
+    SUM(oi.quantity * b.price) AS monthly_revenue
+FROM orders o
+JOIN order_items oi ON o.order_id = oi.order_id
+JOIN books b ON oi.book_id = b.book_id
+GROUP BY YEAR(o.order_date), MONTH(o.order_date)
+ORDER BY order_year, order_month;
+```
+
+---
+
+## Task 7 — Categorize customers as High / Medium / Low value
+
+```sql
+SELECT 
+    c.customer_name,
+    SUM(oi.quantity * b.price) AS total_spent,
+    CASE 
+        WHEN SUM(oi.quantity * b.price) > 50 THEN 'High Value'
+        WHEN SUM(oi.quantity * b.price) BETWEEN 20 AND 50 THEN 'Medium'
+        ELSE 'Low'
+    END AS customer_tier
+FROM orders o
+JOIN order_items oi ON o.order_id = oi.order_id
+JOIN books b ON oi.book_id = b.book_id
+JOIN customers c ON o.customer_id = c.customer_id
+GROUP BY c.customer_name
+ORDER BY total_spent DESC;
+```
+
